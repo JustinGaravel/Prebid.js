@@ -1,26 +1,66 @@
 import * as utils from 'src/utils';
 import { registerBidder } from 'src/adapters/bidderFactory';
 const constants = require('src/constants.json');
-
+constants.REQUEST_KEYS = {
+    "PROFILEID": "profId",
+    "VERSIONID": "verId",
+    "GENDER": "gender",
+    "LAT": "lat",
+    "LON": "lon",
+    "YOB": "yob",
+    "WIID": "wiid",
+    "DCTR": "dctr",
+    "KADFLOOR": "kadfloor",
+    "PMZONEID": "pmzoneid",
+    "KADPAGEURL": "kadpageurl",
+    "PUBLISHERID": "publisherId",
+    "ADSLOTID": "adSlotId"
+  };
+  constants.ERROR_MSG = {
+    "MANDATORY_PARAM": "{%param_name} is mandatory and cannot be {%data_type}. Call to OpenBid will not be sent.",
+    "SKIP_NONSTD_ADSLOT": "Skipping the non-standard adSlot - {%adSlot} in bid \n {%bid}",
+    "IGNORE_PARAM": "Ignoring param key - '{%param_name}' with value '{%value}'. Expects string-value, found - '{%data_type}'",
+    "ADSLOT_FORMAT_ERROR": "AdSlot Error: adSlot not in required format",
+    "ENABLE_IFRAME_SYNC": "Please enable iframe based user sync."
+  };
+  constants.DATA_TYPE = {
+    "NUMERIC": "numeric",
+    "STRING": "string"
+  }
 const BIDDER_CODE = 'pubmatic';
 const ENDPOINT = '//hbopenbid.pubmatic.com/translator?source=prebid-client';
 const USYNCURL = '//ads.pubmatic.com/AdServer/js/showad.js#PIX&kdntuid=1&p=';
 const CURRENCY = 'USD';
 const AUCTION_TYPE = 1;
 const UNDEFINED = undefined;
-const CUSTOM_PARAMS = {
-  'kadpageurl': '', // Custom page url
-  'gender': '', // User gender
-  'yob': '', // User year of birth
-  'lat': '', // User location - Latitude
-  'lon': '', // User Location - Longitude
-  'wiid': '', // OpenWrap Wrapper Impression ID
-  'profId': '', // OpenWrap Legacy: Profile ID
-  'verId': '' // OpenWrap Legacy: version ID
-};
+const CUSTOM_PARAMS = {};
+CUSTOM_PARAMS[constants.REQUEST_KEYS.KADPAGEURL] = ''; // Custom page url
+CUSTOM_PARAMS[constants.REQUEST_KEYS.GENDER] = ""; // User gender
+CUSTOM_PARAMS[constants.REQUEST_KEYS.YOB] = ""; // User year of birth
+CUSTOM_PARAMS[constants.REQUEST_KEYS.LAT] = ""; // User location - Latitude
+CUSTOM_PARAMS[constants.REQUEST_KEYS.LON] = ""; // User Location - Longitude
+CUSTOM_PARAMS[constants.REQUEST_KEYS.WIID] = ""; // OpenWrap Wrapper Impression ID
+CUSTOM_PARAMS[constants.REQUEST_KEYS.PROFILEID] = ""; // OpenWrap Legacy: Profile ID
+CUSTOM_PARAMS[constants.REQUEST_KEYS.VERSIONID] = ""; // OpenWrap Legacy: version ID
+CUSTOM_PARAMS[constants.REQUEST_KEYS.DCTR] = ""; // Custom Targeting
+ 
 const NET_REVENUE = false;
 
 let publisherId = 0;
+
+function _camelCaseBidderCode() {
+  return BIDDER_CODE.replace(BIDDER_CODE.charAt(0), BIDDER_CODE.charAt(0).toUpperCase()).replace(BIDDER_CODE.charAt(3), BIDDER_CODE.charAt(3).toUpperCase());
+}
+
+function _getMessage(msg, dataObj) {
+  var bidderCode = _camelCaseBidderCode();
+  msg = bidderCode +" Error: " + msg;
+  for(var key in dataObj) {
+    msg = msg.replace(new RegExp("{%"+key+"}", 'g'), dataObj[key]);
+  }
+  return msg;
+}
+
 
 function _getDomainFromURL(url) {
   let anchor = document.createElement('a');
@@ -30,21 +70,32 @@ function _getDomainFromURL(url) {
 
 function _parseSlotParam(paramName, paramValue) {
   if (!utils.isStr(paramValue)) {
-    paramValue && utils.logWarn('PubMatic: Ignoring param key: ' + paramName + ', expects string-value, found ' + typeof paramValue);
+    paramValue && utils.logWarn(_getMessage(constants.ERROR_MSG.IGNORE_PARAM, 
+      {
+        'param_name': paramName,
+        'data_type': (typeof paramValue),
+        'value': paramValue
+      }));   
     return UNDEFINED;
   }
 
   switch (paramName) {
-    case 'pmzoneid':
+    case constants.REQUEST_KEYS.PMZONEID:
       return paramValue.split(',').slice(0, 50).map(id => id.trim()).join();
-    case 'kadfloor':
+    case constants.REQUEST_KEYS.KADFLOOR:
       return parseFloat(paramValue) || UNDEFINED;
-    case 'lat':
+    case constants.REQUEST_KEYS.LAT:
       return parseFloat(paramValue) || UNDEFINED;
-    case 'lon':
+    case constants.REQUEST_KEYS.LON:
       return parseFloat(paramValue) || UNDEFINED;
-    case 'yob':
+    case constants.REQUEST_KEYS.YOB:
       return parseInt(paramValue) || UNDEFINED;
+    case constants.REQUEST_KEYS.PROFILEID:
+      return parseInt(paramValue) || UNDEFINED;
+    case constants.REQUEST_KEYS.VERSIONID:
+      return parseInt(paramValue) || UNDEFINED;
+    case constants.REQUEST_KEYS.DCTR:
+      return paramValue || UNDEFINED;
     default:
       return paramValue;
   }
@@ -74,13 +125,13 @@ function _parseAdSlot(bid) {
   }
   splits = slot.split('@');
   if (splits.length != 2) {
-    utils.logWarn('AdSlot Error: adSlot not in required format');
+    utils.logWarn(_getMessage(constants.ERROR_MSG.ADSLOT_FORMAT_ERROR));
     return;
   }
   bid.params.adUnit = splits[0];
   splits = splits[1].split('x');
   if (splits.length != 2) {
-    utils.logWarn('AdSlot Error: adSlot not in required format');
+    utils.logWarn(_getMessage(constants.ERROR_MSG.ADSLOT_FORMAT_ERROR));
     return;
   }
   bid.params.width = parseInt(splits[0]);
@@ -115,7 +166,12 @@ function _handleCustomParams(params, conf) {
         if (utils.isStr(value)) {
           conf[key] = value;
         } else {
-          utils.logWarn('PubMatic: Ignoring param : ' + key + ' with value : ' + CUSTOM_PARAMS[key] + ', expects string-value, found ' + typeof value);
+           utils.logWarn(_getMessage(constants.ERROR_MSG.IGNORE_PARAM, 
+            {
+              'param_name': key,
+              'data_type': (typeof value),
+              'value': value
+            }));
         }
       }
     }
@@ -151,7 +207,7 @@ function _createImpressionObject(bid, conf) {
   return {
     id: bid.bidId,
     tagid: bid.params.adUnit,
-    bidfloor: _parseSlotParam('kadfloor', bid.params.kadfloor),
+    bidfloor: _parseSlotParam(constants.REQUEST_KEYS.KADFLOOR, bid.params.kadfloor),
     secure: window.location.protocol === 'https:' ? 1 : 0,
     banner: {
       pos: 0,
@@ -160,7 +216,7 @@ function _createImpressionObject(bid, conf) {
       topframe: utils.inIframe() ? 0 : 1,
     },
     ext: {
-      pmZoneId: _parseSlotParam('pmzoneid', bid.params.pmzoneid)
+      pmZoneId: _parseSlotParam(constants.REQUEST_KEYS.PMZONEID, bid.params.pmzoneid)
     }
   };
 }
@@ -177,11 +233,19 @@ export const spec = {
   isBidRequestValid: bid => {
     if (bid && bid.params) {
       if (!utils.isStr(bid.params.publisherId)) {
-        utils.logWarn('PubMatic Error: publisherId is mandatory and cannot be numeric. Call to OpenBid will not be sent.');
+        utils.logWarn(_getMessage(constants.ERROR_MSG.MANDATORY_PARAM, 
+            {
+              'param_name': constants.REQUEST_KEYS.PUBLISHERID,
+              'data_type': constants.DATA_TYPE.NUMERIC
+            }));
         return false;
       }
       if (!utils.isStr(bid.params.adSlot)) {
-        utils.logWarn('PubMatic: adSlotId is mandatory and cannot be numeric. Call to OpenBid will not be sent.');
+        utils.logWarn(_getMessage(constants.ERROR_MSG.MANDATORY_PARAM,
+            {
+              'param_name': constants.REQUEST_KEYS.ADSLOTID,
+              'data_type': constants.DATA_TYPE.NUMERIC,
+            }));
         return false;
       }
       return true;
@@ -197,11 +261,12 @@ export const spec = {
   */
   buildRequests: validBidRequests => {
     var conf = _initConf();
-    var payload = _createOrtbTemplate(conf);
+    var payload = _createOrtbTemplate(conf),
+        dctr = "";
     validBidRequests.forEach(bid => {
       _parseAdSlot(bid);
       if (!(bid.params.adSlot && bid.params.adUnit && bid.params.adUnitIndex && bid.params.width && bid.params.height)) {
-        utils.logWarn('PubMatic: Skipping the non-standard adslot:', bid.params.adSlot, bid);
+        utils.logWarn(_getMessage(constants.ERROR_MSG.SKIP_NONSTD_ADSLOT, {'adSlot': bid.params.adSlot, 'bid': JSON.stringify(bid)}));
         return;
       }
       conf.pubId = conf.pubId || bid.params.publisherId;
@@ -217,22 +282,27 @@ export const spec = {
     payload.site.publisher.id = conf.pubId.trim();
     publisherId = conf.pubId.trim();
     payload.ext.wrapper = {};
-    payload.ext.wrapper.profile = conf.profId || UNDEFINED;
-    payload.ext.wrapper.version = conf.verId || UNDEFINED;
+    payload.ext.wrapper.profile = _parseSlotParam(constants.REQUEST_KEYS.PROFILEID, conf.profId) || UNDEFINED;
+    payload.ext.wrapper.version = _parseSlotParam(constants.REQUEST_KEYS.VERSIONID, conf.verId) || UNDEFINED;
     payload.ext.wrapper.wiid = conf.wiid || UNDEFINED;
     payload.ext.wrapper.wv = constants.REPO_AND_VERSION;
     payload.ext.wrapper.transactionId = conf.transactionId;
     payload.ext.wrapper.wp = 'pbjs';
     payload.user.gender = (conf.gender ? conf.gender.trim() : UNDEFINED);
     payload.user.geo = {};
-    payload.user.geo.lat = _parseSlotParam('lat', conf.lat);
-    payload.user.geo.lon = _parseSlotParam('lon', conf.lon);
-    payload.user.yob = _parseSlotParam('yob', conf.yob);
+    payload.user.geo.lat = _parseSlotParam(constants.REQUEST_KEYS.LAT, conf.lat);
+    payload.user.geo.lon = _parseSlotParam(constants.REQUEST_KEYS.LON, conf.lon);
+    payload.user.yob = _parseSlotParam(constants.REQUEST_KEYS.YOB, conf.yob);
     payload.device.geo = {};
-    payload.device.geo.lat = _parseSlotParam('lat', conf.lat);
-    payload.device.geo.lon = _parseSlotParam('lon', conf.lon);
+    payload.device.geo.lat = _parseSlotParam(constants.REQUEST_KEYS.LAT, conf.lat);
+    payload.device.geo.lon = _parseSlotParam(constants.REQUEST_KEYS.LON, conf.lon);
     payload.site.page = conf.kadpageurl.trim() || payload.site.page.trim();
     payload.site.domain = _getDomainFromURL(payload.site.page);
+
+    if (conf.dctr !== UNDEFINED) {
+      payload.site.ext = {};
+      payload.site.ext.key_val = conf.dctr.trim();
+    }
     return {
       method: 'POST',
       url: ENDPOINT,
@@ -283,7 +353,7 @@ export const spec = {
         url: USYNCURL + publisherId
       }];
     } else {
-      utils.logWarn('PubMatic: Please enable iframe based user sync.');
+      utils.logWarn(_getMessage(constants.ERROR_MSG.ENABLE_IFRAME_SYNC));
     }
   }
 };
