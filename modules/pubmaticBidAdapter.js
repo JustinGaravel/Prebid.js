@@ -48,10 +48,27 @@ const NET_REVENUE = false;
 
 let publisherId = 0;
 
+/*
+Util function to display the bidder name in camelcase.
+Function configured for bidder name 'pubmatic' stored in variable BIDDER_CODE
+*/
 function _camelCaseBidderCode() {
   return BIDDER_CODE.replace(BIDDER_CODE.charAt(0), BIDDER_CODE.charAt(0).toUpperCase()).replace(BIDDER_CODE.charAt(3), BIDDER_CODE.charAt(3).toUpperCase());
 }
 
+/*
+Util function to log custom messages.
+  msg - msg string
+  dataObj - values to replace macros in the string (optional)
+  eg:
+  msg = "{%param_name} is mandatory and cannot be {%data_type}. Call to OpenBid will not be sent."
+  correspinding dataObj -
+    {
+      param_name: 'adSlotId',
+      data_type: 'numeric'
+    }
+  return value = "PubMatic Error: adSlotId is mandatory and cannot be numeric. Call to OpenBid will not be sent.
+*/
 function _getMessage(msg, dataObj) {
   var bidderCode = _camelCaseBidderCode();
   msg = bidderCode +" Error: " + msg;
