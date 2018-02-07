@@ -299,7 +299,7 @@ export const spec = {
     payload.site.page = conf.kadpageurl.trim() || payload.site.page.trim();
     payload.site.domain = _getDomainFromURL(payload.site.page);
 
-    if (conf.dctr !== UNDEFINED) {
+    if (conf.dctr !== UNDEFINED && conf.dctr.trim().length > 0) {
       payload.site.ext = {};
       payload.site.ext.key_val = conf.dctr.trim();
     }
