@@ -272,8 +272,7 @@ export const spec = {
   */
   buildRequests: validBidRequests => {
     var conf = _initConf();
-    var payload = _createOrtbTemplate(conf),
-        dctr = "";
+    var payload = _createOrtbTemplate(conf);
     validBidRequests.forEach(bid => {
       _parseAdSlot(bid);
       if (!(bid.params.adSlot && bid.params.adUnit && bid.params.adUnitIndex && bid.params.width && bid.params.height)) {
