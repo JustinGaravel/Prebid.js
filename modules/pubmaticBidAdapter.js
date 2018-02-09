@@ -28,7 +28,6 @@ constants.DATA_TYPE = {
   'STRING': 'string'
 }
 const BIDDER_CODE = 'pubmatic';
-const BIDDER_CODE_STRING = 'PubMatic Error: '
 const ENDPOINT = '//hbopenbid.pubmatic.com/translator?source=prebid-client';
 const USYNCURL = '//ads.pubmatic.com/AdServer/js/showad.js#PIX&kdntuid=1&p=';
 const CURRENCY = 'USD';
@@ -61,7 +60,7 @@ Util function to log custom messages.
   return value = 'PubMatic Error: adSlotId is mandatory and cannot be numeric. Call to OpenBid will not be sent.
 */
 function _getMessage(msg, dataObj) {
-  msg = BIDDER_CODE_STRING + msg;
+  msg = BIDDER_CODE + ": "+ msg;
   for (var key in dataObj) {
     msg = msg.replace(new RegExp('{%' + key + '}', 'g'), dataObj[key]);
   }
@@ -275,6 +274,7 @@ export const spec = {
         return;
       }
       conf.pubId = conf.pubId || bid.params.publisherId;
+      publisherId = conf.pubId;
       conf = _handleCustomParams(bid.params, conf);
       conf.transactionId = bid.transactionId;
       payload.imp.push(_createImpressionObject(bid, conf));
@@ -289,17 +289,20 @@ export const spec = {
       version: _parseSlotParam(constants.REQUEST_KEYS.VERSIONID, conf.verId) || UNDEFINED,
       wiid: conf.wiid || UNDEFINED,
       wv: constants.REPO_AND_VERSION,
-      transactionId: conf.transactionId,
+      //Commenting this since, transactionId should be part of src as per ortb 2.5 standard. for now, transactionID will not be passed.
+      //transactionId: conf.transactionId,
       wp: 'pbjs'
     };
-    payload.user = {
-      gender: (conf.gender ? conf.gender.trim() : UNDEFINED),
-      geo: {
-        lat: _parseSlotParam(constants.REQUEST_KEYS.LAT, conf.lat),
-        lon: _parseSlotParam(constants.REQUEST_KEYS.LON, conf.lon)
-      },
-      yob: _parseSlotParam(constants.REQUEST_KEYS.YOB, conf.yob)
-    };
+    if(conf.gender || conf.lat || conf.lon || conf.yob) {
+      payload.user = {
+        gender: (conf.gender ? conf.gender.trim() : UNDEFINED),
+        geo: {
+          lat: _parseSlotParam(constants.REQUEST_KEYS.LAT, conf.lat),
+          lon: _parseSlotParam(constants.REQUEST_KEYS.LON, conf.lon)
+        },
+        yob: _parseSlotParam(constants.REQUEST_KEYS.YOB, conf.yob)
+      };
+    }
     payload.device.geo = payload.user.geo;
     payload.site = {
       publisher: {
@@ -308,7 +311,6 @@ export const spec = {
       page: conf.kadpageurl.trim() || payload.site.page.trim(),
       domain: _getDomainFromURL(payload.site.page)
     }
-
     if (conf.dctr !== UNDEFINED && conf.dctr.trim().length > 0) {
       payload.site.ext = {
         key_val: conf.dctr.trim()
@@ -365,6 +367,7 @@ export const spec = {
       }];
     } else {
       utils.logWarn(_getMessage(constants.ERROR_MSG.ENABLE_IFRAME_SYNC));
+      return [];
     }
   }
 };
