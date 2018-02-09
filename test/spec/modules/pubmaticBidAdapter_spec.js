@@ -24,7 +24,7 @@ describe('PubMatic adapter', () => {
     		  wiid: '1234567890',
     		  profId: '100',
     		  verId: '200',
-          dctr: "key1:val1,val2|key2:val1"
+          dctr: 'key1:val1,val2|key2:val1'
         },
         placementCode: '/19968336/header-bid-tag-1',
         sizes: [[300, 250], [300, 600]],
@@ -140,8 +140,8 @@ describe('PubMatic adapter', () => {
   		  expect(data.ext.wrapper.wv).to.equal(constants.REPO_AND_VERSION); // Wrapper Version
   		  expect(data.ext.wrapper.transactionId).to.equal(bidRequests[0].transactionId); // Prebid TransactionId
   		  expect(data.ext.wrapper.wiid).to.equal(bidRequests[0].params.wiid); // OpenWrap: Wrapper Impression ID
-  		  expect(data.ext.wrapper.profile).to.equal(bidRequests[0].params.profId); // OpenWrap: Wrapper Profile ID
-  		  expect(data.ext.wrapper.version).to.equal(bidRequests[0].params.verId); // OpenWrap: Wrapper Profile Version ID
+        expect(data.ext.wrapper.profile).to.equal(parseInt(bidRequests[0].params.profId)); // OpenWrap: Wrapper Profile ID
+        expect(data.ext.wrapper.version).to.equal(parseInt(bidRequests[0].params.verId)); // OpenWrap: Wrapper Profile Version ID
 
   		  expect(data.imp[0].id).to.equal(bidRequests[0].bidId); // Prebid bid id is passed as id
   		  expect(data.imp[0].bidfloor).to.equal(parseFloat(bidRequests[0].params.kadfloor)); // kadfloor

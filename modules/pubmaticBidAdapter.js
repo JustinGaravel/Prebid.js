@@ -2,33 +2,33 @@ import * as utils from 'src/utils';
 import { registerBidder } from 'src/adapters/bidderFactory';
 const constants = require('src/constants.json');
 constants.REQUEST_KEYS = {
-    "PROFILEID": "profId",
-    "VERSIONID": "verId",
-    "GENDER": "gender",
-    "LAT": "lat",
-    "LON": "lon",
-    "YOB": "yob",
-    "WIID": "wiid",
-    "DCTR": "dctr",
-    "KADFLOOR": "kadfloor",
-    "PMZONEID": "pmzoneid",
-    "KADPAGEURL": "kadpageurl",
-    "PUBLISHERID": "publisherId",
-    "ADSLOTID": "adSlotId"
-  };
-  constants.ERROR_MSG = {
-    "MANDATORY_PARAM": "{%param_name} is mandatory and cannot be {%data_type}. Call to OpenBid will not be sent.",
-    "SKIP_NONSTD_ADSLOT": "Skipping the non-standard adSlot - {%adSlot} in bid \n {%bid}",
-    "IGNORE_PARAM": "Ignoring param key - '{%param_name}' with value '{%value}'. Expects string-value, found - '{%data_type}'",
-    "ADSLOT_FORMAT_ERROR": "AdSlot Error: adSlot not in required format",
-    "ENABLE_IFRAME_SYNC": "Please enable iframe based user sync."
-  };
-  constants.DATA_TYPE = {
-    "NUMERIC": "numeric",
-    "STRING": "string"
-  }
+  'PROFILEID': 'profId',
+  'VERSIONID': 'verId',
+  'GENDER': 'gender',
+  'LAT': 'lat',
+  'LON': 'lon',
+  'YOB': 'yob',
+  'WIID': 'wiid',
+  'DCTR': 'dctr',
+  'KADFLOOR': 'kadfloor',
+  'PMZONEID': 'pmzoneid',
+  'KADPAGEURL': 'kadpageurl',
+  'PUBLISHERID': 'publisherId',
+  'ADSLOTID': 'adSlotId'
+};
+constants.ERROR_MSG = {
+  'MANDATORY_PARAM': '{%param_name} is mandatory and cannot be {%data_type}. Call to OpenBid will not be sent.',
+  'SKIP_NONSTD_ADSLOT': 'Skipping the non-standard adSlot - {%adSlot} in bid \n {%bid}',
+  'IGNORE_PARAM': 'Ignoring param key - \'{%param_name}\' with value \'{%value}\'. Expects string-value, found - \'{%data_type}\'',
+  'ADSLOT_FORMAT_ERROR': 'AdSlot Error: adSlot not in required format',
+  'ENABLE_IFRAME_SYNC': 'Please enable iframe based user sync.'
+};
+constants.DATA_TYPE = {
+  'NUMERIC': 'numeric',
+  'STRING': 'string'
+}
 const BIDDER_CODE = 'pubmatic';
-const BIDDER_CODE_STRING = "PubMatic Error: "
+const BIDDER_CODE_STRING = 'PubMatic Error: '
 const ENDPOINT = '//hbopenbid.pubmatic.com/translator?source=prebid-client';
 const USYNCURL = '//ads.pubmatic.com/AdServer/js/showad.js#PIX&kdntuid=1&p=';
 const CURRENCY = 'USD';
@@ -36,42 +36,37 @@ const AUCTION_TYPE = 1;
 const UNDEFINED = undefined;
 const CUSTOM_PARAMS = {};
 CUSTOM_PARAMS[constants.REQUEST_KEYS.KADPAGEURL] = ''; // Custom page url
-CUSTOM_PARAMS[constants.REQUEST_KEYS.GENDER] = ""; // User gender
-CUSTOM_PARAMS[constants.REQUEST_KEYS.YOB] = ""; // User year of birth
-CUSTOM_PARAMS[constants.REQUEST_KEYS.LAT] = ""; // User location - Latitude
-CUSTOM_PARAMS[constants.REQUEST_KEYS.LON] = ""; // User Location - Longitude
-CUSTOM_PARAMS[constants.REQUEST_KEYS.WIID] = ""; // OpenWrap Wrapper Impression ID
-CUSTOM_PARAMS[constants.REQUEST_KEYS.PROFILEID] = ""; // OpenWrap Legacy: Profile ID
-CUSTOM_PARAMS[constants.REQUEST_KEYS.VERSIONID] = ""; // OpenWrap Legacy: version ID
-CUSTOM_PARAMS[constants.REQUEST_KEYS.DCTR] = ""; // Custom Targeting
- 
+CUSTOM_PARAMS[constants.REQUEST_KEYS.GENDER] = ''; // User gender
+CUSTOM_PARAMS[constants.REQUEST_KEYS.YOB] = ''; // User year of birth
+CUSTOM_PARAMS[constants.REQUEST_KEYS.LAT] = ''; // User location - Latitude
+CUSTOM_PARAMS[constants.REQUEST_KEYS.LON] = ''; // User Location - Longitude
+CUSTOM_PARAMS[constants.REQUEST_KEYS.WIID] = ''; // OpenWrap Wrapper Impression ID
+CUSTOM_PARAMS[constants.REQUEST_KEYS.PROFILEID] = ''; // OpenWrap Legacy: Profile ID
+CUSTOM_PARAMS[constants.REQUEST_KEYS.VERSIONID] = ''; // OpenWrap Legacy: version ID
+CUSTOM_PARAMS[constants.REQUEST_KEYS.DCTR] = ''; // Custom Targeting
 const NET_REVENUE = false;
 
 let publisherId = 0;
-
-
-
 /*
 Util function to log custom messages.
   msg - msg string
   dataObj - values to replace macros in the string (optional)
   eg:
-  msg = "{%param_name} is mandatory and cannot be {%data_type}. Call to OpenBid will not be sent."
+  msg = '{%param_name} is mandatory and cannot be {%data_type}. Call to OpenBid will not be sent.'
   correspinding dataObj -
     {
       param_name: 'adSlotId',
       data_type: 'numeric'
     }
-  return value = "PubMatic Error: adSlotId is mandatory and cannot be numeric. Call to OpenBid will not be sent.
+  return value = 'PubMatic Error: adSlotId is mandatory and cannot be numeric. Call to OpenBid will not be sent.
 */
 function _getMessage(msg, dataObj) {
   msg = BIDDER_CODE_STRING + msg;
-  for(var key in dataObj) {
-    msg = msg.replace(new RegExp("{%"+key+"}", 'g'), dataObj[key]);
+  for (var key in dataObj) {
+    msg = msg.replace(new RegExp('{%' + key + '}', 'g'), dataObj[key]);
   }
   return msg;
 }
-
 
 function _getDomainFromURL(url) {
   let anchor = document.createElement('a');
@@ -81,12 +76,12 @@ function _getDomainFromURL(url) {
 
 function _parseSlotParam(paramName, paramValue) {
   if (!utils.isStr(paramValue)) {
-    paramValue && utils.logWarn(_getMessage(constants.ERROR_MSG.IGNORE_PARAM, 
+    paramValue && utils.logWarn(_getMessage(constants.ERROR_MSG.IGNORE_PARAM,
       {
         'param_name': paramName,
         'data_type': (typeof paramValue),
         'value': paramValue
-      }));   
+      }));
     return UNDEFINED;
   }
 
@@ -177,7 +172,7 @@ function _handleCustomParams(params, conf) {
         if (utils.isStr(value)) {
           conf[key] = value;
         } else {
-           utils.logWarn(_getMessage(constants.ERROR_MSG.IGNORE_PARAM, 
+          utils.logWarn(_getMessage(constants.ERROR_MSG.IGNORE_PARAM,
             {
               'param_name': key,
               'data_type': (typeof value),
@@ -244,19 +239,19 @@ export const spec = {
   isBidRequestValid: bid => {
     if (bid && bid.params) {
       if (!utils.isStr(bid.params.publisherId)) {
-        utils.logWarn(_getMessage(constants.ERROR_MSG.MANDATORY_PARAM, 
-            {
-              'param_name': constants.REQUEST_KEYS.PUBLISHERID,
-              'data_type': constants.DATA_TYPE.NUMERIC
-            }));
+        utils.logWarn(_getMessage(constants.ERROR_MSG.MANDATORY_PARAM,
+          {
+            'param_name': constants.REQUEST_KEYS.PUBLISHERID,
+            'data_type': constants.DATA_TYPE.NUMERIC
+          }));
         return false;
       }
       if (!utils.isStr(bid.params.adSlot)) {
         utils.logWarn(_getMessage(constants.ERROR_MSG.MANDATORY_PARAM,
-            {
-              'param_name': constants.REQUEST_KEYS.ADSLOTID,
-              'data_type': constants.DATA_TYPE.NUMERIC,
-            }));
+          {
+            'param_name': constants.REQUEST_KEYS.ADSLOTID,
+            'data_type': constants.DATA_TYPE.NUMERIC,
+          }));
         return false;
       }
       return true;
@@ -313,7 +308,7 @@ export const spec = {
       page: conf.kadpageurl.trim() || payload.site.page.trim(),
       domain: _getDomainFromURL(payload.site.page)
     }
-    
+
     if (conf.dctr !== UNDEFINED && conf.dctr.trim().length > 0) {
       payload.site.ext = {
         key_val: conf.dctr.trim()
