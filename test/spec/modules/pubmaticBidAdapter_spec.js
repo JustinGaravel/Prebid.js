@@ -180,5 +180,24 @@ describe('PubMatic adapter', () => {
         expect(response[0].ad).to.equal(bidResponses.body.seatbid[0].bid[0].adm);
       });
     });
+
+    describe('getUserSyncs()', () => {
+      it('should return valid response if iframeEnabled is set', () => {
+        let syncoptionsIframe = {
+          iframeEnabled: true
+        };
+        const userSyncUrl = `//ads.pubmatic.com/AdServer/js/showad.js#PIX&kdntuid=1&p=${bidRequests[0].params.publisherId}`;
+        expect(spec.getUserSyncs(syncoptionsIframe).length).to.equal(1);
+        expect(spec.getUserSyncs(syncoptionsIframe)[0].type).to.equal('iframe');
+        expect(spec.getUserSyncs(syncoptionsIframe)[0].url).to.equal(userSyncUrl);
+      });
+
+      it('should return empty array if iframeEnabled is not set', () => {
+        let syncoptionsIframe = {
+          iframeEnabled: false
+        };
+        expect(spec.getUserSyncs(syncoptionsIframe).length).to.equal(0);
+      });
+    });
   });
 });

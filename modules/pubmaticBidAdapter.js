@@ -28,6 +28,7 @@ constants.REQUEST_KEYS = {
     "STRING": "string"
   }
 const BIDDER_CODE = 'pubmatic';
+const BIDDER_CODE_STRING = "PubMatic Error: "
 const ENDPOINT = '//hbopenbid.pubmatic.com/translator?source=prebid-client';
 const USYNCURL = '//ads.pubmatic.com/AdServer/js/showad.js#PIX&kdntuid=1&p=';
 const CURRENCY = 'USD';
@@ -48,13 +49,7 @@ const NET_REVENUE = false;
 
 let publisherId = 0;
 
-/*
-Util function to display the bidder name in camelcase.
-Function configured for bidder name 'pubmatic' stored in variable BIDDER_CODE
-*/
-function _camelCaseBidderCode() {
-  return BIDDER_CODE.replace(BIDDER_CODE.charAt(0), BIDDER_CODE.charAt(0).toUpperCase()).replace(BIDDER_CODE.charAt(3), BIDDER_CODE.charAt(3).toUpperCase());
-}
+
 
 /*
 Util function to log custom messages.
@@ -70,8 +65,7 @@ Util function to log custom messages.
   return value = "PubMatic Error: adSlotId is mandatory and cannot be numeric. Call to OpenBid will not be sent.
 */
 function _getMessage(msg, dataObj) {
-  var bidderCode = _camelCaseBidderCode();
-  msg = bidderCode +" Error: " + msg;
+  msg = BIDDER_CODE_STRING + msg;
   for(var key in dataObj) {
     msg = msg.replace(new RegExp("{%"+key+"}", 'g'), dataObj[key]);
   }
@@ -157,8 +151,8 @@ function _parseAdSlot(bid) {
 
 function _initConf() {
   var conf = {};
-  conf.pageURL = utils.getTopWindowUrl();
-  conf.refURL = utils.getTopWindowReferrer();
+  conf.pageURL = utils.getTopWindowUrl().trim();
+  conf.refURL = utils.getTopWindowReferrer().trim();
   return conf;
 }
 
@@ -296,29 +290,35 @@ export const spec = {
       return;
     }
 
-    payload.site.publisher.id = conf.pubId.trim();
-    publisherId = conf.pubId.trim();
-    payload.ext.wrapper = {};
-    payload.ext.wrapper.profile = _parseSlotParam(constants.REQUEST_KEYS.PROFILEID, conf.profId) || UNDEFINED;
-    payload.ext.wrapper.version = _parseSlotParam(constants.REQUEST_KEYS.VERSIONID, conf.verId) || UNDEFINED;
-    payload.ext.wrapper.wiid = conf.wiid || UNDEFINED;
-    payload.ext.wrapper.wv = constants.REPO_AND_VERSION;
-    payload.ext.wrapper.transactionId = conf.transactionId;
-    payload.ext.wrapper.wp = 'pbjs';
-    payload.user.gender = (conf.gender ? conf.gender.trim() : UNDEFINED);
-    payload.user.geo = {};
-    payload.user.geo.lat = _parseSlotParam(constants.REQUEST_KEYS.LAT, conf.lat);
-    payload.user.geo.lon = _parseSlotParam(constants.REQUEST_KEYS.LON, conf.lon);
-    payload.user.yob = _parseSlotParam(constants.REQUEST_KEYS.YOB, conf.yob);
-    payload.device.geo = {};
-    payload.device.geo.lat = _parseSlotParam(constants.REQUEST_KEYS.LAT, conf.lat);
-    payload.device.geo.lon = _parseSlotParam(constants.REQUEST_KEYS.LON, conf.lon);
-    payload.site.page = conf.kadpageurl.trim() || payload.site.page.trim();
-    payload.site.domain = _getDomainFromURL(payload.site.page);
-
+    payload.ext.wrapper = {
+      profile: _parseSlotParam(constants.REQUEST_KEYS.PROFILEID, conf.profId) || UNDEFINED,
+      version: _parseSlotParam(constants.REQUEST_KEYS.VERSIONID, conf.verId) || UNDEFINED,
+      wiid: conf.wiid || UNDEFINED,
+      wv: constants.REPO_AND_VERSION,
+      transactionId: conf.transactionId,
+      wp: 'pbjs'
+    };
+    payload.user = {
+      gender: (conf.gender ? conf.gender.trim() : UNDEFINED),
+      geo: {
+        lat: _parseSlotParam(constants.REQUEST_KEYS.LAT, conf.lat),
+        lon: _parseSlotParam(constants.REQUEST_KEYS.LON, conf.lon)
+      },
+      yob: _parseSlotParam(constants.REQUEST_KEYS.YOB, conf.yob)
+    };
+    payload.device.geo = payload.user.geo;
+    payload.site = {
+      publisher: {
+        id: conf.pubId.trim()
+      },
+      page: conf.kadpageurl.trim() || payload.site.page.trim(),
+      domain: _getDomainFromURL(payload.site.page)
+    }
+    
     if (conf.dctr !== UNDEFINED && conf.dctr.trim().length > 0) {
-      payload.site.ext = {};
-      payload.site.ext.key_val = conf.dctr.trim();
+      payload.site.ext = {
+        key_val: conf.dctr.trim()
+      };
     }
     return {
       method: 'POST',
