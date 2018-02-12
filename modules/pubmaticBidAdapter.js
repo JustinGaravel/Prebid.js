@@ -1,6 +1,7 @@
 import * as utils from 'src/utils';
 import { registerBidder } from 'src/adapters/bidderFactory';
 const constants = require('src/constants.json');
+// adding adapter specific constants 
 constants.REQUEST_KEYS = {
   'PROFILEID': 'profId',
   'VERSIONID': 'verId',
